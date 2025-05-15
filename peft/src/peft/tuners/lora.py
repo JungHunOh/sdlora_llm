@@ -376,7 +376,6 @@ class Linear(nn.Linear, LoraLayer):
             result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
         elif self.r > 0 and not self.merged:
             if self.r > 0:
-                result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
                 if self.sign_preserve:
                     matmul_output = self.lora_B.weight @ self.lora_A.weight
                     effective_w = self.weight + transpose(matmul_output.to(previous_dtype), self.fan_in_fan_out) * self.scaling
@@ -384,6 +383,7 @@ class Linear(nn.Linear, LoraLayer):
                     effective_w = abs(effective_w) * torch.sign(self.weight)
                     result = F.linear(x, transpose(effective_w, self.fan_in_fan_out), bias=self.bias)
                 else:
+                    result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
                     result += self.lora_B(self.lora_A(self.lora_dropout(x.to(self.lora_A.weight.dtype)))) * self.scaling
             else:
                 result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
