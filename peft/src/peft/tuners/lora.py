@@ -377,7 +377,8 @@ class Linear(nn.Linear, LoraLayer):
         elif self.r > 0 and not self.merged:
             if self.r > 0:
                 if self.sign_preserve:
-                    matmul_output = self.lora_B.weight @ self.lora_A.weight
+                    #matmul_output = self.lora_B.weight @ self.lora_A.weight
+                    matmul_output = torch.mm(self.lora_B.weight, self.lora_A.weight)
                     effective_w = self.weight + transpose(matmul_output.to(previous_dtype), self.fan_in_fan_out) * self.scaling
                     self.changed_signs = (torch.sign(self.weight) == torch.sign(effective_w)).detach()
                     effective_w = abs(effective_w) * torch.sign(self.weight)
