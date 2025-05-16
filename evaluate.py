@@ -129,7 +129,7 @@ def main(
             json.dump(output_data, f, indent=4)
         pbar.update(1)
     pbar.close()
-    with open(f'experiment/{args.lora_weights.replace('./trained_models/','')}.txt', 'w+') as f:
+    with open(f'experiment/{args.lora_weights.replace('./trained_models/','')}_{args.dataset}.txt', 'w+') as f:
         f.write(f'\rtest:{idx + 1}/{total} | accuracy {correct}  {correct / (idx + 1)}')
     print('\n')
     print('test finished')
