@@ -85,7 +85,7 @@ def main(
         print()
     """
     #save_file = f'experiment/{args.model}-{args.adapter}-{args.dataset}.json'
-    save_file = f'experiment/{args.lora_weights.replace('./trained_models/','')}.json'
+    save_file = f'experiment/{args.lora_weights.replace('./trained_models/','')}_{args.dataset}.json'
     create_dir('experiment/')
 
     dataset = load_data(args)
