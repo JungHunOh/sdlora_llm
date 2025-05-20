@@ -1,8 +1,0 @@
-CUDA_VISIBLE_DEVICES=$1 python finetune.py --base_model 'EleutherAI/gpt-j-6b' --data_path './ft-training_set/math_10k.json' --output_dir './trained_models/gptj-6b-lora_lr1e-3/' --batch_size 16 --micro_batch_size 4   --num_epochs 3   --learning_rate 1e-3   --cutoff_len 256   --val_set_size 0 --eval_step 80 --save_step 80  --adapter_name lora --target_modules '["q_proj", "k_proj", "v_proj", "fc_in", "fc_out"]' --lora_r 32 --lora_alpha 64
-
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset SVAMP --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset AQuA --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset AddSub --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset gsm8k --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset MultiArith --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
-CUDA_VISIBLE_DEVICES=$1 python evaluate.py --model GPT-j-6B --adapter LoRA --dataset SingleEq --base_model 'EleutherAI/gpt-j-6b' --lora_weights './trained_models/gptj-6b-lora_lr1e-3'
