@@ -10,7 +10,7 @@ model='gpt'
 #model='llama'
 
 lr=3e-4
-r=16
+r=32
 
 if model == 'gpt':
     base_model = 'EleutherAI/gpt-j-6b'

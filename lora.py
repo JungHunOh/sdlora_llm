@@ -3,14 +3,14 @@ import os
 print('enter gpu')
 gpu=int(input())
 
-dataset='commonsense_170k'
-#dataset='math_50k'
+#dataset='commonsense_170k'
+dataset='math_50k'
 
 model='gpt'
 #model='llama'
 
 lr=3e-4
-r=16
+r=32
 
 if model == 'gpt':
     base_model = 'EleutherAI/gpt-j-6b'

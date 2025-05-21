@@ -106,6 +106,11 @@ def train(
     ), "Please specify a --base_model, e.g. --base_model='decapoda-research/llama-7b-hf'"
     gradient_accumulation_steps = batch_size // micro_batch_size
 
+    if base_model == 'EleutherAI/gpt-j-6b':
+        target_modules = ["q_proj", "k_proj", "v_proj", "fc_in", "fc_out"]
+    elif base_model == 'yahma/llama-7b-hf':
+        target_modules = ["q_proj", "k_proj", "v_proj", "up_proj", "down_proj"]
+
     device_map = "auto"
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
