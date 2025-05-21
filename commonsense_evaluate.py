@@ -68,7 +68,7 @@ def main(
         print(outputs)
         return outputs
 
-    save_file = f'experiment/{args.model}-{args.adapter}-{args.dataset}.json'
+    save_file = f'experiment/{args.lora_weights.replace('./trained_models/','')}_{args.dataset}.json'
     create_dir('experiment/')
 
     dataset = load_data(args)
@@ -104,7 +104,7 @@ def main(
         print('---------------')
         print(f'\rtest:{idx + 1}/{total} | accuracy {correct}  {correct / current}')
         print('---------------')
-        with open(save_file, 'w+') as f:
+        with open(f'experiment/{args.lora_weights.replace('./trained_models/','')}_{args.dataset}.txt', 'w+') as f:
             json.dump(output_data, f, indent=4)
         pbar.update(1)
     pbar.close()
@@ -173,7 +173,7 @@ def parse_args():
                         required=True)
     parser.add_argument('--base_model', required=True)
     parser.add_argument('--lora_weights', required=True)
-    parser.add_argument('--batch_size', type=int, required=True)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--load_8bit', action='store_true', default=False)
 
     return parser.parse_args()
