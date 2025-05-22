@@ -84,9 +84,9 @@ def main(
         print("Response:", evaluate(instruction))
         print()
     """
-    save_name = f'{args.lora_weights.replace('./trained_models/','')}_{args.dataset}'
+    save_name=args.lora_weights.replace('./trained_models/','')
     #save_file = f'experiment/{args.model}-{args.adapter}-{args.dataset}.json'
-    save_file = f'experiment/{save_name}.json'
+    save_file = f'experiment/{save_name}_{args.dataset}.json'
     create_dir('experiment/')
 
     dataset = load_data(args)
@@ -130,7 +130,7 @@ def main(
             json.dump(output_data, f, indent=4)
         pbar.update(1)
     pbar.close()
-    with open(f'experiment/{save_name}.txt', 'w+') as f:
+    with open(f'experiment/{save_name}_{args.dataset}.txt', 'w+') as f:
         f.write(f'\rtest:{idx + 1}/{total} | accuracy {correct}  {correct / (idx + 1)}')
     print('\n')
     print('test finished')
