@@ -106,7 +106,7 @@ def main(
         print('---------------')
         print(f'\rtest:{idx + 1}/{total} | accuracy {correct}  {correct / current}')
         print('---------------')
-        with open(f'experiment/{args.lora_weights.replace('./trained_models/','')}_{args.dataset}.txt', 'w+') as f:
+        with open(f'experiment/{save_name}_{args.dataset}.txt', 'w+') as f:
             json.dump(output_data, f, indent=4)
         pbar.update(1)
     pbar.close()
