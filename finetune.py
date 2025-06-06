@@ -33,6 +33,7 @@ def train(
         output_dir: str = "./lora-alpaca",
         adapter_name: str = "lora",
         sign_preserve : bool = False,
+        pissa_init : bool = False,
         load_8bit : bool = False,
         # training hyperparams
         batch_size: int = 128,
@@ -209,6 +210,7 @@ def train(
             bias="none",
             task_type="CAUSAL_LM",
             sign_preserve=sign_preserve,
+            pissa_init=pissa_init,
         )
     elif adapter_name == "bottleneck":
         config = BottleneckConfig(

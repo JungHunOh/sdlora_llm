@@ -86,6 +86,10 @@ class LoraConfig(PeftConfig):
     sign_preserve: bool = field(
         default=False, metadata={"help": "preserve sign and update only magnitude"}
     )
+    
+    pissa_init: bool = field(
+        default=False, metadata={"help": "preserve sign and update only magnitude"}
+    )
 
     def __post_init__(self):
         self.peft_type = PeftType.LORA
@@ -166,7 +170,7 @@ class LoraModel(torch.nn.Module):
                         kwargs.update({"enable_lora": self.peft_config.enable_lora})
                         new_module = MergedLinear8bitLt(target.in_features, target.out_features, bias=bias, **kwargs)
                 elif isinstance(target, torch.nn.Linear) and self.peft_config.enable_lora is None:
-                    new_module = Linear(target.in_features, target.out_features, bias=bias, sign_preserve=self.peft_config.sign_preserve, **kwargs)
+                    new_module = Linear(target.in_features, target.out_features, bias=bias, sign_preserve=self.peft_config.sign_preserve, pissa_init=self.peft_config.pissa_init, **kwargs)
                 elif self.peft_config.enable_lora is not None:
                     kwargs.update({"enable_lora": self.peft_config.enable_lora})
                     if isinstance(target, Conv1D):
@@ -183,6 +187,10 @@ class LoraModel(torch.nn.Module):
                             kwargs["fan_in_fan_out"] = self.peft_config.fan_in_fan_out = False
                     new_module = MergedLinear(in_features, out_features, bias=bias, **kwargs)
                 self._replace_module(parent, target_name, new_module, target)
+                if new_module.sign_preserve:
+                    new_module.initial_sign = torch.sign(new_module.weight)
+                if new_module.pissa_init:
+                    new_module.initialize_pissa()
         if not is_target_modules_in_base_model:
             raise ValueError(
                 f"Target modules {self.peft_config.target_modules} not found in the base model. "
@@ -301,6 +309,7 @@ class Linear(nn.Linear, LoraLayer):
         fan_in_fan_out: bool = False,  # Set this to True if the layer to replace stores weight like (fan_in, fan_out)
         merge_weights: bool = True,
         sign_preserve: bool = False,
+        pissa_init: bool = False,
         **kwargs,
     ):
         nn.Linear.__init__(self, in_features, out_features, **kwargs)
@@ -308,6 +317,7 @@ class Linear(nn.Linear, LoraLayer):
 
         self.fan_in_fan_out = fan_in_fan_out
         self.sign_preserve = sign_preserve
+        self.pissa_init = pissa_init
         if self.sign_preserve:
             self.changed_signs = None
         # Actual trainable parameters
@@ -320,13 +330,39 @@ class Linear(nn.Linear, LoraLayer):
         self.reset_parameters()
         if fan_in_fan_out:
             self.weight.data = self.weight.data.T
-
+        
     def reset_parameters(self):
         nn.Linear.reset_parameters(self)
         if hasattr(self, "lora_A"):
             # initialize A the same way as the default for nn.Linear and B to zero
             nn.init.kaiming_uniform_(self.lora_A.weight, a=math.sqrt(5))
             nn.init.zeros_(self.lora_B.weight)
+
+    def initialize_pissa(self):
+        print('Initialize Using PiSSA')
+        dtype = self.weight.dtype
+        weight = transpose(self.weight.to(torch.float32), self.fan_in_fan_out)
+
+        # full SVD
+        # V, S, Uh = torch.linalg.svd(weight.data, full_matrices=False)
+        # Vr = V[:, : self.r]
+        # Sr = S[: self.r]
+        # Sr /= self.scaling
+        # Uhr = Uh[: self.r]
+
+        Vr, Sr, Ur = torch.svd_lowrank(
+            weight.data, self.r, niter=4
+        )
+        Sr /= self.scaling
+        Uhr = Ur.t()
+
+        lora_A = torch.diag(torch.sqrt(Sr)) @ Uhr
+        lora_B = Vr @ torch.diag(torch.sqrt(Sr))
+        self.lora_A.weight.data = lora_A
+        self.lora_B.weight.data = lora_B
+        weight = weight.data - self.scaling * lora_B @ lora_A
+        weight = transpose(weight.to(dtype), self.fan_in_fan_out)
+        self.weight.data = weight
 
     def train(self, mode: bool = True):
         nn.Linear.train(self, mode)
@@ -380,8 +416,8 @@ class Linear(nn.Linear, LoraLayer):
                     #matmul_output = self.lora_B.weight @ self.lora_A.weight
                     matmul_output = torch.mm(self.lora_B.weight, self.lora_A.weight)
                     effective_w = self.weight + transpose(matmul_output.to(previous_dtype), self.fan_in_fan_out) * self.scaling
-                    self.changed_signs = (torch.sign(self.weight) == torch.sign(effective_w)).detach()
-                    effective_w = abs(effective_w) * torch.sign(self.weight)
+                    #self.changed_signs = (torch.sign(self.weight) == torch.sign(effective_w)).detach()
+                    effective_w = abs(effective_w) * self.initial_sign
                     result = F.linear(x, transpose(effective_w, self.fan_in_fan_out), bias=self.bias)
                 else:
                     result = F.linear(x, transpose(self.weight, self.fan_in_fan_out), bias=self.bias)
