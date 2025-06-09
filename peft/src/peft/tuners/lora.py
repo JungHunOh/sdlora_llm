@@ -259,7 +259,7 @@ class LoraModel(torch.nn.Module):
 # had to adapt it for `lora_only` to work
 def mark_only_lora_as_trainable(model: nn.Module, bias: str = "none") -> None:
     for n, p in model.named_parameters():
-        if "lora_" not in n:
+        if "vera_" not in n:
             p.requires_grad = False
     if bias == "none":
         return
@@ -324,6 +324,8 @@ class Linear(nn.Linear, LoraLayer):
         if r > 0:
             self.lora_A = nn.Linear(in_features, r, bias=False)
             self.lora_B = nn.Linear(r, out_features, bias=False)
+            self.vera_b = nn.Parameter(torch.ones(out_features,1), requires_grad=True)
+            self.vera_d = nn.Parameter(torch.randn((r,1)), requires_grad=True)
             self.scaling = self.lora_alpha / self.r
             # Freezing the pre-trained weight matrix
             self.weight.requires_grad = False
@@ -414,8 +416,8 @@ class Linear(nn.Linear, LoraLayer):
             if self.r > 0:
                 if self.sign_preserve:
                     #matmul_output = self.lora_B.weight @ self.lora_A.weight
-                    matmul_output = torch.mm(self.lora_B.weight, self.lora_A.weight)
-                    effective_w = self.weight + transpose(matmul_output.to(previous_dtype), self.fan_in_fan_out) * self.scaling
+                    matmul_output = torch.mm(self.lora_B.weight.de1tach(), self.vera_d * self.lora_A.weight.detach()) * self.vera_b
+                    effective_w = transpose(matmul_output.to(previous_dtype), self.fan_in_fan_out) * self.scaling
                     #self.changed_signs = (torch.sign(self.weight) == torch.sign(effective_w)).detach()
                     effective_w = abs(effective_w) * self.initial_sign
                     result = F.linear(x, transpose(effective_w, self.fan_in_fan_out), bias=self.bias)
